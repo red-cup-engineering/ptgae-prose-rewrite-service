@@ -1,0 +1,13 @@
+{
+  "name": "@red-cup-engineering/ptgae-prose-rewrite-service",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Review-only PTGAE style proposals guarded by the prose analyzer.",
+  "exports": {
+    ".": "./src/propose.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
