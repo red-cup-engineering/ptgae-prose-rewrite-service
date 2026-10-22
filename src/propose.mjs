@@ -120,7 +120,7 @@ export function reviewPtgaeProposalUnderFiber({
   }
   const version = safeRewriteRules.version;
   if (typeof version !== 'string'
-    || !/^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$/u.test(version)) {
+    || !/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(version)) {
     throw new TypeError('safeRewriteRules.version must be a semantic version');
   }
   let locale;
