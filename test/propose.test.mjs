@@ -56,7 +56,7 @@ test('identity is preserved and unrecognized transformations cannot be admitted'
 });
 
 test('dangerous changes in the existing semantic-drift fixture corpus are rejected',()=>{
-  const data=JSON.parse(readFileSync(new URL('../../../data/fixtures/semantic-drift-cases.json',import.meta.url)));
+  const data=JSON.parse(readFileSync(new URL('../../../data/records/fixtures/semantic-drift-cases.json',import.meta.url)));
   for(const fixture of data.cases.filter(x=>x.expected==='reject')){
     const got=evaluatePtgaeCandidate({sourceText:fixture.source,candidateText:fixture.candidate});
     assert.equal(got.disposition,'reject',fixture.id);
