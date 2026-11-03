@@ -87,3 +87,92 @@ export function evaluatePtgaeCandidate({ sourceText, candidateText, sourceVersio
     executableEffects: [],
   };
 }
+
+
+/**
+ * Receive an ORIGINAL selector's optional safeRewriteRules resource.
+ *
+ * A missing fiber, a rule not selected for review, or a contradictory source
+ * policy NEVER yields a candidate. The producer's own REPLACEMENTS keys are the
+ * sole implementation inventory: callers cannot enable an unimplemented rule.
+ *
+ * This does not validate original-source custody, grammar, semantic equivalence,
+ * consent, editor approval or publication authority.
+ */
+export function reviewPtgaeProposalUnderFiber({
+  sourceText, sourceVersion = null, safeRewriteRules = null,
+} = {}) {
+  const original = proposePtgaeRewrites({ sourceText, sourceVersion });
+  const sourceSha256 = original.source.sha256;
+  if (safeRewriteRules == null) {
+    return {
+      kind: 'ptgae.selected-rewrite-review.v0',
+      disposition: 'fiber-unavailable',
+      reason: 'SAFE_REWRITE_FIBER_NOT_SELECTED',
+      sourceSha256,
+      permittedRuleIds: [], deniedRuleIds: [], proposal: null, evaluation: null,
+      automaticApplicationAllowed: false, executableEffects: [],
+    };
+  }
+  if (typeof safeRewriteRules !== 'object' || Array.isArray(safeRewriteRules)
+    || !Array.isArray(safeRewriteRules.rules)) {
+    throw new TypeError('safeRewriteRules must be a selected resource with a rules array');
+  }
+  const version = safeRewriteRules.version;
+  if (typeof version !== 'string'
+    || !/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(version)) {
+    throw new TypeError('safeRewriteRules.version must be a semantic version');
+  }
+  let locale;
+  try {
+    [locale] = Intl.getCanonicalLocales(safeRewriteRules.language);
+  } catch {
+    throw new RangeError('safeRewriteRules requires an en-US source edition');
+  }
+  if (locale !== 'en-US' || (safeRewriteRules.locale !== undefined
+    && Intl.getCanonicalLocales(safeRewriteRules.locale)[0] !== locale)) {
+    throw new RangeError('unsupported safeRewriteRules language edition');
+  }
+  const declared = new Set();
+  const permitted = [];
+  for (const rule of safeRewriteRules.rules) {
+    if (!rule || typeof rule !== 'object' || Array.isArray(rule)
+      || typeof rule.ruleId !== 'string' || typeof rule.action !== 'string') {
+      throw new TypeError('selected safeRewriteRules contains an invalid rule');
+    }
+    if (declared.has(rule.ruleId)) throw new RangeError('duplicate selected safe-rewrite rule');
+    declared.add(rule.ruleId);
+    if (rule.automaticApplicationAllowed === true) {
+      throw new RangeError('review-only safe rewrite fiber must not claim automatic application');
+    }
+    if (rule.action === 'propose-for-review' && Object.hasOwn(REPLACEMENTS, rule.ruleId)) {
+      permitted.push(rule.ruleId);
+    }
+  }
+  const permittedRuleIds = permitted.sort();
+  const deniedRuleIds = [...new Set(original.edits
+    .map(edit => edit.ruleId).filter(id => !permittedRuleIds.includes(id)))].sort();
+  if (deniedRuleIds.length) {
+    return {
+      kind: 'ptgae.selected-rewrite-review.v0',
+      disposition: 'fiber-restricted',
+      reason: 'REWRITE_RULE_NOT_SELECTED',
+      sourceSha256,
+      permittedRuleIds, deniedRuleIds, proposal: null, evaluation: null,
+      automaticApplicationAllowed: false, executableEffects: [],
+    };
+  }
+  const evaluation = evaluatePtgaeCandidate({
+    sourceText, candidateText: original.candidateText, sourceVersion,
+  });
+  return {
+    kind: 'ptgae.selected-rewrite-review.v0',
+    disposition: evaluation.disposition,
+    reason: evaluation.reason,
+    sourceSha256,
+    permittedRuleIds, deniedRuleIds: [],
+    proposal: original, evaluation,
+    automaticApplicationAllowed: false,
+    executableEffects: [],
+  };
+}

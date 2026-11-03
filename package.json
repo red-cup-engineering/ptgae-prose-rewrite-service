@@ -1,6 +1,6 @@
 {
   "name": "@red-cup-engineering/ptgae-prose-rewrite-service",
-  "version": "0.1.0",
+  "version": "0.1.1-dev.0",
   "type": "module",
   "private": true,
   "description": "Review-only PTGAE style proposals guarded by the prose analyzer.",
